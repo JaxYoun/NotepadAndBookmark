@@ -8361,11 +8361,42 @@ VirtualBox安装Centos
 远程仓库
 	git push -u origin master  //将本地仓库推送到远程仓库
 /********************************************/
-张量：表示N阶数组，标量即为0阶张量，向量为一阶张量，矩阵为二阶张量，三维数组即为三阶张量。
+基于TensorFlow的神经网络：用张量表示数据，用计算图搭建神经网络，用会话执行计算图，优化线上的权重或参数来得到模型。
+张量：即多维数组，标量即为0阶张量，向量为一阶张量，矩阵为二阶张量，三维数组即为三阶张量。
 /********************************************/
+Nginx将http请求转发至https
+server {
+    listen 80;
+    server_name www.hg-cloud.cn;
+    rewrite ^(.*)$ https://$host$1 permanent;
+}
 /********************************************/
+单体应用的不足：
+1.项目代码量大
+2.编译部署耗时长
+3.改动成本高
+4.扩容消耗资源
 /********************************************/
+Spring-Cloud组件：
+1.commons：Spring-Cloud基础公共包。
+2.Spring-Cloud-Config：一个可以基于Git、SVN或者操作系统文件系统进行保存的分布式统一配置管理中心。
+	对标产品有disconf(百度)、diamond（阿里）、apollo（携程比前面两个更好），但是他们都是通过数据库来保存配置的
+	Spring-Cloud-Config的优点：
+	1.和Spring生态无缝对接。
+	2.完全支持Spring的各种注解。
+	3.配置不需要保存在DB中。
+	Spring-Cloud-Config>apollo>diamond>disconf
+3.Spring-Cloud-Console：
+	Spring-Cloud-Console/Spring-Cloud-Zookeeper/Spring-Cloud-Etcd/eurka
+	Zookeeper：java开发，基于pax算法，
 /********************************************/
+spring-cloud-netflix
+1.Eureka
+	服务端只需要引入eureka-server
+	客户端（包括生产者和消费者）都是引入eureka-client，同时需要在项目classPath下建立config.properties文件（文件可以包含配置项），同时还要引入web-starter才能正常启动并完成注册。
+2.Ribbon
+3.Hystrix
+4.Zuul
 /********************************************/
 /********************************************/
 /********************************************/
