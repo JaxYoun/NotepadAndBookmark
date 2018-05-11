@@ -8398,7 +8398,25 @@ spring-cloud-netflix
 3.Hystrix
 4.Zuul
 /********************************************/
+Centos7上Nexus-3.x安装配置
+1.安装JDK。
+2.到Nexus官网https://www.sonatype.com下载Linux版安装包：nexus-3.11.0-01-unix.tar.gz。
+3.将压缩包上传到系统，解压。
+4.
+mvn deploy:deploy-file -DgroupId=com.yang -DartifactId=fastdfs-client-java -Dversion=1.24 -Dpackaging=jar -Dfile=E:\appData\mavenRepo\com\squareup\okio\okio\1.14.0 -Durl=http://118.24.122.172:8777/nexus/repository/xuyinPrivate/ -DrepositoryId=xuyinPrivate
 /********************************************/
+1.Java7中HashMap的实现方式是hash函数+entry数组+entry链表的方式，首先调用key的hash函数计算出其hashcode用以在entry数组中定位，
+	如果存在hashcode相同即发生hash碰撞的情况就再调用key的equals方法，如果相等则替换掉这个key对应的value，
+	如果不相等即发生了hash碰撞，则以后来居上的规则在这个元素上添加链表成员，保存新来的元素，
+	这种处理碰撞的方式在put和get时会对碰撞元素上的链表进行遍历，这个过程会逐个equals链表的所有元素，存在性能浪费。
+	entry数组有0.75的负载因子，即当元素个数超过数组长度的75%，数组就会扩容resize1.5倍，
+	扩容过程会重新将所有的entry（包括链表上的元素也会重新映射）映射到新数组上，这样性能开销较大，
+2.Java8中HashMap，沿用了Java7的实现机制，但是当碰撞链表长度大于8时，且所有元素个数大于64时，
+	就会将链表转换为红黑树，此时除了添加外，其他操作的性能都更高因为使用了分治法，扩容操作树上元素的重定位也更快。
+3.Java7中ConcurrentHashMap使用了分段加锁的方式，有一个默认值为16并发级别的参数，即将entry数组分为16段，每个段中又有16个链表，
+4.Java8中ConcurrentHashMap中废弃了分段和锁的机制，同时也使用entry数组+链表+红黑树的数据结构，而是使用cas算法，用无锁的方式来实现线程安全减少锁带来的开销。
+5.Java7中方法区是堆中永久区的一个特殊区域，几乎不会被回收，Java8中废弃了方法区而是叫做metaspace，这个空间使用物理内存，不受jvm进程的内存分配限制，
+	有了足够的空间就不会因为类过多而引发gc，从而提高了性能。
 /********************************************/
 /********************************************/
 /********************************************/
