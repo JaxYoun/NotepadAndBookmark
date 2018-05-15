@@ -8700,6 +8700,55 @@ public class LoginConfigurtion extends WebMvcConfigurerAdapter{
 这样可以进行相关的内容处理，在使用上面也可以根据自己的需求来实现。
 preHandle方法的应用也很方便，通过就返回true。
 /********************************************/
+ /**
+     * Java8版本的wordCount程序
+     */
+    @Test
+    public void test() {
+        Map<String, LongAdder> tempMap = new HashMap<>();
+        Arrays.stream("1,2,3,4".split(",")).forEach(System.err::println);
+        Stream.of("11,21,3", "4,5,6,11").flatMap(it -> Stream.of(it.split(","))).map(it -> {
+            if (!tempMap.keySet().contains(it)) {
+                LongAdder longAdder = new LongAdder();
+                longAdder.add(1);
+                tempMap.put(it, longAdder);
+            } else {
+                tempMap.get(it).increment();
+            }
+            return null;
+        });
+
+        Iterator<Map.Entry<String, LongAdder>> iterator = tempMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, LongAdder> entry = iterator.next();
+            System.out.println(entry.getKey() + "=====>" + entry.getValue().sum());
+        }
+    }
+
+    /**
+     * reduce测试
+     */
+    @Test
+    public void test0() {
+        IntStream.of(1,2,3,4).reduce((a, b) -> a + b).ifPresent(System.out::println);
+        Arrays.asList("11", "22", "33").parallelStream().count();
+        System.out.println(11);
+    }
+
+    /**
+     * try-with-resouce语法测试
+     * @throws IOException
+     */
+    @Test
+    public void test1() throws IOException {
+        try(FileInputStream input = new FileInputStream("E:\\test\\files0\\file_server_adaptor-master\\pom.xml")) {
+            int data = input.read();
+            while(data != -1){
+                System.out.print((char) data);
+                data = input.read();
+            }
+        }
+    }
 /********************************************/
 /********************************************/
 /********************************************/
