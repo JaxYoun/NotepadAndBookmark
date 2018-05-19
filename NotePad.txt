@@ -7543,9 +7543,14 @@ public static void main(String[] args) {
 并且无法编译jdk1.5以上的代码。
 出现这样的原因应该是Maven插件的默认配置有问题。
 解决方法是在"pom.xml"里加入如下代码
+
 <properties>
-	<maven.compiler.source>1.8</maven.compiler.source>
-	<maven.compiler.target>1.8</maven.compiler.target>
+   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>          
+   <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+   <java.version>1.8</java.version>
+   <maven.compiler.source>1.8</maven.compiler.source>
+   <maven.compiler.target>1.8</maven.compiler.target>
+   <encoding>UTF-8</encoding>
 </properties>
 /********************************************/
 Linux系统日志查看
@@ -8418,6 +8423,15 @@ mvn deploy:deploy-file -DgroupId=com.yang -DartifactId=fastdfs-client-java -Dver
 5.Java7中方法区是堆中永久区的一个特殊区域，几乎不会被回收，Java8中废弃了方法区而是叫做metaspace，这个空间使用物理内存，不受jvm进程的内存分配限制，
 	有了足够的空间就不会因为类过多而引发gc，从而提高了性能。
 /********************************************/
+如何拆分功能：
+1.单一职责，松耦合、高内聚
+2.关注点分离：
+	--按职责：按业务领域职责单一的可以分离
+	--按通用性：消息服务、用户服务等
+	--按粒度级别：
+	
+*先拆分出业务功能，再考虑功能对应的数据。
+*无状态服务，如果一个服务依赖状态数据，则这个服务成为有状态服务。（如果一个数据需要被多个服务共享，才能完成一个请求，这个数据就叫状态数据）
 /********************************************/
 /********************************************/
 /********************************************/
