@@ -8754,7 +8754,57 @@ preHandle方法的应用也很方便，通过就返回true。
         }
     }
 /********************************************/
+Eureka是客户端服务发现机制，服务列表的获取，过滤，规则的执行，这些操作都是在客户端通过Ribbon。
 /********************************************/
+Ribbon功能：
+服务发现：依据服务名称将所有服务实例找出来。
+服务选择：根据一定规则策略从多个实例中挑选一个提供服务。
+服务监听：检测失效服务，并快速剔除。
+
+主要构件：
+	ServerList：获取所有可用服务列表
+	IServerListFilter：过滤掉一部分
+	IRule：通过规则策略选择一个
+/********************************************/
+服务间通信：
+	RestTemplate组件：内部是使用Ribbon作为负载均衡实现的。
+	Feign组件：内部也是使用Ribbon作为负载均衡实现的。
+/********************************************/
+Feign
+/********************************************/
+Java 开发中，需要将一些易变的配置参数放置再 XML 配置文件或者 properties 配置文件中。
+然而 XML 配置文件需要通过 DOM 或 SAX 方式解析，而读取 properties 配置文件就比较容易。
+介绍几种读取方式：
+1、基于ClassLoder读取配置文件
+注意：该方式只能读取类路径下的配置文件，有局限但是如果配置文件在类路径下比较方便。
+	Properties properties = new Properties();
+	// 使用ClassLoader加载properties配置文件生成对应的输入流
+	InputStream in = PropertiesMain.class.getClassLoader().getResourceAsStream("config/config.properties");
+	// 使用properties对象加载输入流
+	properties.load(in);
+	//获取key对应的value值
+	properties.getProperty(String key);
+
+2、基于 InputStream 读取配置文件
+	注意：该方式的优点在于可以读取任意路径下的配置文件
+	Properties properties = new Properties();
+	// 使用InPutStream流读取properties文件
+	BufferedReader bufferedReader = new BufferedReader(new FileReader("E:/config.properties"));
+	properties.load(bufferedReader);
+	// 获取key对应的value值
+	properties.getProperty(String key);
+3、通过 java.util.ResourceBundle 类来读取，这种方式比使用 Properties 要方便一些
+	通过 ResourceBundle.getBundle() 静态方法来获取（ResourceBundle是一个抽象类），这种方式来获取properties属性文件不需要加.properties后缀名，只需要文件名即可
+	properties.getProperty(String key);
+	//config为属性文件名，放在包com.test.config下，如果是放在src下，直接用config即可  
+	ResourceBundle resource = ResourceBundle.getBundle("com/test/config/config");
+	String key = resource.getString("keyWord"); 
+	从 InputStream 中读取，获取 InputStream 的方法和上面一样，不再赘述
+	ResourceBundle resource = new PropertyResourceBundle(inStream);
+	注意：在使用中遇到的最大的问题可能是配置文件的路径问题，如果配置文件入在当前类所在的包下，那么需要使用包名限定，如：config.properties入在com.test.config包下，则要使用com/test/config/config.properties（通过Properties来获取）或com/test/config/config（通过ResourceBundle来获取）；属性文件在src根目录下，则直接使用config.properties或config即可。
+ResourceBundle resource = ResourceBundle.getBundle("config");
+String serverName = resource.getString("server.name");
+System.out.printf("this is my serverName: %s", serverName);
 /********************************************/
 /********************************************/
 /********************************************/
