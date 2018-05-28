@@ -2493,7 +2493,24 @@ delimiter ;  //将之前临时定义的语句结束符“$$”，【还原】为
 SELECT f_test_fun(1, 1);  //函数调用
 SELECT f_test_fun(1, 1) FROM DUAL;  //同上
 /********************************************/
-//根据父节点id查询所有其所有子节点（包括父节点本身）
+函数的声明定义
+delimiter $$
+CREATE FUNCTION `getChildList`(rootId varchar(100))   
+RETURNS varchar(2000)  
+BEGIN   
+DECLARE str varchar(2000);  
+DECLARE cid varchar(100);   
+SET str = '$';   
+SET cid = rootId;   
+WHILE cid is not null DO   
+    SET str = concat(str, ',', cid);   
+    SELECT group_concat(id) INTO cid FROM t_yang_test where FIND_IN_SET(parent_id, cid) > 0;   
+END WHILE;   
+RETURN str;   
+END $$
+delimiter ;
+
+//生成的函数结果，根据父节点id查询所有其所有子节点（包括父节点本身）
 BEGIN
 	DECLARE sTemp VARCHAR(1000);
 	DECLARE sTempChd VARCHAR(1000);
