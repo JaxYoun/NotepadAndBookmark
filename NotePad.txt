@@ -8649,7 +8649,7 @@ Spring-Boot中使用自定义filter
 
 三、应用
 @Component
-@ServletComponentScan
+@ServletComponentScan2  //当遇到组件扫描不到的问题时可以使用这个注解并配合其属性来解决
 @WebFilter(urlPatterns = "/login/*",filterName = "loginFilter")
 public class LoginFilter implements Filter{
 
@@ -8714,7 +8714,7 @@ public class LoginConfigurtion extends WebMvcConfigurerAdapter{
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor())
-                .addPathPatterns("/*")
+                .addPathPatterns("/**")
                 .excludePathPatterns("/user/login");
     }
 }
