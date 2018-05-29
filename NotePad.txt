@@ -8823,6 +8823,108 @@ ResourceBundle resource = ResourceBundle.getBundle("config");
 String serverName = resource.getString("server.name");
 System.out.printf("this is my serverName: %s", serverName);
 /********************************************/
+---------------------------------------------------------------------------------------------------------------
+UPDATE t_yang_test t
+SET t.parent_id = t.parent_id + 1
+WHERE
+	t.id = 1;
+---------------------------------------------------------------------------------------------------------------
+可以满足根节点不在列表中的需求
+delimiter $$
+DROP FUNCTION IF EXISTS getChildList;
+CREATE FUNCTION `getChildList`(rootId varchar(100))   
+RETURNS varchar(2000)  
+BEGIN   
+DECLARE str varchar(2000);
+DECLARE cid varchar(100);   
+SET str = '$';   
+SET cid = rootId;   
+WHILE cid is not null DO   
+    SET str = concat(str, ',', cid);   
+    SELECT group_concat(id) INTO cid FROM t_yang_test where FIND_IN_SET(parent_id, cid) > 0;   
+END WHILE;
+RETURN str;
+END $$
+delimiter ;
+
+SELECT getChildList(115) FROM DUAL;
+---------------------------------------------------------------------------------------------------------------
+delimiter $$
+DROP FUNCTION IF EXISTS getChildListWithoutRoot;
+CREATE FUNCTION `getChildListWithoutRoot`(rootId varchar(100))   
+RETURNS varchar(2000)  
+BEGIN   
+DECLARE str varchar(2000);
+DECLARE resul varchar(2000);
+DECLARE cid varchar(100);   
+SET str = '$';   
+SET cid = rootId;   
+WHILE cid is not null DO   
+    SET str = concat(str, ',', cid);   
+    SELECT group_concat(id) INTO cid FROM t_yang_test where FIND_IN_SET(parent_id, cid) > 0;   
+END WHILE;
+SELECT SUBSTRING_INDEX(str, ",", -2) INTO resul FROM DUAL;  //去掉前两个元素（$和rootId）
+RETURN resul;
+END $$
+delimiter ;
+
+SELECT getChildListWithoutRoot(115) FROM DUAL;  //函数调用
+---------------------------------------------------------------------------------------------------------------
+SELECT SUBSTRING_INDEX("1,2,3,4", ",", -2) FROM DUAL;  //按照分隔符及其索引切分字符串，如果索引时正数表示从左往右数，负数择表示从右往左数
+---------------------------------------------------------------------------------------------------------------
+Axure RP 8 注册码
+仅供个人学习交流使用（建议购买正版授权）
+8.1.0.3366亲测可用
+Licensee：University of Science and Technology of China (CLASSROOM)
+Key：DTXRAnPn1P65Rt0xB4eTQ+4bF5IUF0gu0X9XBEUhM4QxY0DRFJxYEmgh4nyh7RtL
+---------------------------------------------------------------------------------------------------------------
+/*
+ * 这是基于注解的映射方式，实现对数据的增删改查，将sql语句直接写在注解的括号中
+ * 这是一个接口，其不需要类去实现它
+ * 下边分别是插入，删除，修改，查询一个记录，查询所有的记录
+ * */
+public interface UserMapper {
+	@Insert("insert into users(name,age) values(#{name},#{age})")
+	public void insertT(User user);
+
+	@Delete("delete from users where id=#{id}")
+	public void deleteById(int id);
+
+	@Update("update users set name=#{name},age=#{age} where id=#{id}")
+	public void updateT(User user);
+
+	@Select("select * from users where id=#{id}")
+	public User getUser(int id);
+
+	@Select("select * from users")
+	public List<User> getAllUsers();
+}
+---------------------------------------------------------------------------------------------------------------
+INSERT INTO t_yang_test VALUES (12, 1, "高新区", 2) ON DUPLICATE KEY UPDATE parent_id = 1, `name` = '高新区', type = 4;  //如果插入记录主键重复择直接更新
+---------------------------------------------------------------------------------------------------------------
+条件插入，单条记录
+INSERT INTO t_yang_test (parent_id, `name`, type) SELECT 2, "nihao", 10
+FROM
+	DUAL
+WHERE
+	NOT EXISTS (
+		SELECT
+			id
+		FROM
+			t_yang_test
+		WHERE
+			parent_id = 2
+		AND type = 10
+	);
+---------------------------------------------------------------------------------------------------------------
+条件插入，多条记录
+INSERT INTO clients   
+(client_id, client_name, client_type)   
+SELECT supplier_id, supplier_name, 'advertising'   
+FROM suppliers   
+WHERE not exists (select * from clients   
+where clients.client_id = suppliers.supplier_id); 
+---------------------------------------------------------------------------------------------------------------
 /********************************************/
 /********************************************/
 /********************************************/
