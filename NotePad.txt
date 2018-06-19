@@ -2353,6 +2353,12 @@ git push origin alpha
 /********************************************/
 git remote add origin git@github.com:JaxYoun/ActiveMqDemo.git  //将项目添加到远程仓库
 /********************************************/
+从GitHub克隆项目到本地
+1.到GitHub远程仓库打开对应项目，点击"clone or download"按钮，选择通信协议HTTPS或者SSH【一个不能clone，切换试试】
+2.复制框中的链接https://github.com/JaxYoun/spring-boot-redis-session-demo.git
+3.在本地目录中【不需要新建与项目同名的目录】打开GitBash，输入git clone https://github.com/JaxYoun/spring-boot-redis-session-demo.git
+4.等待下载完成
+/********************************************/
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%
@@ -8926,6 +8932,26 @@ WHERE not exists (select * from clients
 where clients.client_id = suppliers.supplier_id); 
 ---------------------------------------------------------------------------------------------------------------
 /********************************************/
+在MySql中如何查询每个用户的基本信息，同时还要查询这个用户拥有的角色个数
+SELECT
+	t.id AS `id`,
+	t. NAME AS `name`,
+	t.age AS `age`,
+	(
+		SELECT
+			COUNT(*)
+		FROM
+			t_user u
+		INNER JOIN t_user_role ur ON u.id = ur.user_id
+		INNER JOIN t_role r ON ur.role_id = r.id
+		WHERE
+			u.id = t.id
+	) AS `roleCount`
+FROM
+	t_user t
+WHERE
+	t.age = 30
+OR t.age = 27;
 /********************************************/
 /********************************************/
 /********************************************/
