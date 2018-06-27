@@ -8953,6 +8953,30 @@ WHERE
 	t.age = 30
 OR t.age = 27;
 /********************************************/
+-- 在一个查询中比较两个子查询的结果的大小，返回值0：false，1：true。
+SELECT
+	foo.count <> bar.count AS `result`
+FROM
+	(
+		SELECT
+			COUNT(t.role_id) AS `count`
+		FROM
+			t_user_role t
+		WHERE
+			t.user_id IN (1, 2)
+	) AS `foo`,
+	(
+		SELECT
+			COUNT(DISTINCT t.role_id) AS `count`
+		FROM
+			t_user_role t
+		WHERE
+			t.user_id IN (1, 2)
+	) AS `bar`;
+/********************************************/
+1.引入Spring-Security依赖
+2.编写配置类
+	SpringSecurityConfig extends WebSecurityConfigurerAdapter
 /********************************************/
 /********************************************/
 /********************************************/
