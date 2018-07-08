@@ -8978,7 +8978,67 @@ FROM
 2.编写配置类
 	SpringSecurityConfig extends WebSecurityConfigurerAdapter
 /********************************************/
+1.reactiveProgram：异步非阻塞
+	1.异步数据流：
+		1.具有集合的功能，看起来像Java的StreamAPI
+		2.单向流动
+		3.时间+序列
+	2.数据流操作：		
 /********************************************/
+一、安装Docker
+	1.yum list | grep docker  //由于yum仓库里的docker可能不是最新版的，所以不建议用yum安装，推荐使用curl执行远程脚本的方式从docker官网安装
+	2.curl -fsSL https://get.docker.com/ | sh
+	3.测试是否安装成功：docker version会显示各种版本信息
+二、配置镜像加速
+	鉴于国内网络问题，后续拉取Docker镜像十分缓慢，我们可以需要配置加速器来解决，我使用的是网易的镜像地址：http://hub-mirror.c.163.com。
+	新版的Docker使用json配置文件/etc/docker/daemon.json（Linux）
+	请在该配置文件中加入（没有该文件的话，请先建一个）：
+	{
+		"registry-mirrors": ["http://hub-mirror.c.163.com"]
+	}
+三、执行用户组
+	创建用户组：groupadd docker
+	将用户添加到组中：usermod -aG docker youn
+四、启动服务
+	1.systemctl start docker或者service docker start  //启动命令
+五、Docker版Hello World测试
+	1.拉取hello-world镜像：docker pull hello-world
+	2.查看服务中的镜像列表：docker images
+	3.查看服务器中运行的容器：docker ps  //添加-l选项可以查看最近被创建的容器
+	4.运行容器
+		docker run hello-world  //如果打印出Hello from Docker!表示运行正常
+		1.交互式：docker run -it centos:latest  //选项i表示启动一个交互式容器，用户退出容器后容器随即销毁，可以用exit或CTRL+D退出容器。
+				  t选项表示启动容器后打开一个命令行terminal，可以在这个terminal执行容器内命令
+		2.后台式：docker run -d centos:latest  //选项d表示启动一个后台式容器，用户不会登进容器，保持后台运行。
+	5.根据容器唯一ID查看容器的运行日志：docker logs -f 2263e10d958b  //选项f表示实时显示，类似tail -400f命令
+	6.根据容器唯一ID停止容器：docker stop 2263e10d958b
+六、载入web应用：docker pull training/webapp  //拉取示例web应用镜像
+				 docker run -d -P training/webapp python app.py  //开启容器，-P:将容器内部使用的网络端口映射到我们使用的主机上，flask的是5000，会将本地的32768映射上去。
+				 curl localhost:32768  //测试web应用，返回hello world表示正常
+七、查看容器端口：
+	1.docker ps  //查看运行中的容器
+	2.docker ps -a  //查看所有容器，包括启动而未运行的
+	2.docker port containerName  //可以跟容器名称或唯一ID作为参数
+八、查看容器中的进程列表：
+	docker top containerName  //也可以是唯一ID作为参数
+九、查看容器度量参数：
+	docker inspect 25b59eb18121  //以JSON格式返回容器的一系列参数
+十、停/启一个容器：
+	docker stop 25b59eb18121  //停止容器
+	docker start 25b59eb18121  //容器停止后，还可以用上次的ID或者名称重启容器（并非新建容器）
+十一、查看docker服务器整体信息：
+	docker info
+十二、根据镜像创建自定义名字的容器：
+	docker create --name="yang-centos" centos:latest
+十三、删除已停止容器
+	docker rm dreamy_roentgen
+十四、在DockersHub中查找镜像
+	docker search coreos
+十五、更新镜像【更新容器的yum库或者apt库】
+	1.docker run -it centos:latest  //用旧镜像启动一个容器
+	2.yum update  //在容器内执行yum库更新操作
+	3.docker commit -m="yang's first entos image" -a="yang" 2ab20c209cd2 centos:centos-v7-yang  //基于已有容器，提交一个新的镜像到本地仓库
+TODO 根据dockerfile构建镜像
 /********************************************/
 /********************************************/
 /********************************************/
