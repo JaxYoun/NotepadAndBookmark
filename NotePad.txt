@@ -9013,8 +9013,12 @@ FROM
 	5.根据容器唯一ID查看容器的运行日志：docker logs -f 2263e10d958b  //选项f表示实时显示，类似tail -400f命令
 	6.根据容器唯一ID停止容器：docker stop 2263e10d958b
 六、载入web应用：docker pull training/webapp  //拉取示例web应用镜像
-				 docker run -d -P training/webapp python app.py  //开启容器，-P:将容器内部使用的网络端口映射到我们使用的主机上，flask的是5000，会将本地的32768映射上去。
+				 docker run -d -P training/webapp python app.py  //开启容器，-P:将容器内部使用的网络端口映射宿主机的随机端口上，flask的是5000，会将主机的32768端口映射上去。
+				 docker run -d -p 8888:500 training/webapp python app.py  //开启容器，-p:将容器内部使用的网络端口映射宿主机指定端口上，flask的是5000，会将主机的8888端口映射上去。
 				 curl localhost:32768  //测试web应用，返回hello world表示正常
+				 
+				 docker run --name=containerName centos:imageName  //自定义名称启动容器
+				 docker run --name "containerName" centos:imageName  //自定义名称启动容器
 七、查看容器端口：
 	1.docker ps  //查看运行中的容器
 	2.docker ps -a  //查看所有容器，包括启动而未运行的
@@ -9028,16 +9032,23 @@ FROM
 	docker start 25b59eb18121  //容器停止后，还可以用上次的ID或者名称重启容器（并非新建容器）
 十一、查看docker服务器整体信息：
 	docker info
-十二、根据镜像创建自定义名字的容器：
+十二、根据镜像创建自定义名字的镜像：
 	docker create --name="yang-centos" centos:latest
 十三、删除已停止容器
 	docker rm dreamy_roentgen
 十四、在DockersHub中查找镜像
 	docker search coreos
-十五、更新镜像【更新容器的yum库或者apt库】
+十五、更新镜像【更新容器内的yum库或者apt库】
 	1.docker run -it centos:latest  //用旧镜像启动一个容器
 	2.yum update  //在容器内执行yum库更新操作
 	3.docker commit -m="yang's first entos image" -a="yang" 2ab20c209cd2 centos:centos-v7-yang  //基于已有容器，提交一个新的镜像到本地仓库
+十六、删除镜像
+	docker rmi centos:myCentos7
+十八、启动和进入容器最佳实践：
+	1.docker run -it --name myCentos centos:latest  //首先启动容器，并以交互是命令行形式进入容器
+	2.待内部操作完成后使用CTRL+P+Q组合键静默退出，这样退出后容器任然会运行，不会停止
+		还有一种不推荐的退出方式，直接用exit命令退出，此时容器会停止运行，然后再用restart myCentos命令重启容器
+	3.docker attach myCentos  //再次进入容器命令行界面进行其他操作
 TODO 根据dockerfile构建镜像
 /********************************************/
 /********************************************/
