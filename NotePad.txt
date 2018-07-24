@@ -3891,6 +3891,7 @@ JavaScript中没用私有作用域的概念，可以使用立即执行函数模�
 idea激活站点
 http://idea.iteblog.com/key.php  //idea激活站点
 https://jetlicense.nss.im/  //clion激活站点
+http://idea.uri.ci  //Pycharm激活站点
 /*****************if-else***************************/
 【大括号包裹的语句块是有值的，其值及值得类型由块中最后一条语句推断】
 【类型推断通过变量的值的类型来确定变量的类型，在复杂算法实现中可以省略很多变量类型的声明，可以带来极大的便利】
@@ -9058,6 +9059,143 @@ TODO 根据dockerfile构建镜像
 3.CAS-Client根据回路url将页面再次重定向回到业务系统，用户再次访问业务数据，这次带上了认证token，此token被业务系统中的CAS-Client发往CAS-Server进行验证，
 	如果验证通过，业务系统会在本系统内初始化该用户的局部session。
 /********************************************/
+用JDK内置的SSL证书生成工具keytool制作自签名证书
+1.生成服务器端证书
+	keytool 
+	-genkey 
+	-alias tomcat(证书别名) 
+	-keypass 123456(别名密码) 
+	-keyalg RSA(算法) 
+	-keysize 1024(密钥长度) 
+	-validity 365(有效期，天单位) 
+	-keystore D:/keys/tomcat.keystore(指定生成证书的位置和证书名称，一定要先建好目录) 
+	-storepass 123456(获取keystore信息的密码)
+	
+	keytool -genkey -alias tomcat -keypass 123456 -keyalg RSA -keysize 1024 -validity 365 -keystore D:/keys/tomcat.keystore -storepass 123456
+	命令执行过车中一路回车，IP也不用填写
+
+2.生成浏览器端证书
+	keytool
+	-genkey
+	-alias client
+	-keypass 123456
+	-keyalg RSA
+	-storetype PKCS12
+	-keypass 123456
+	-storepass 123456
+	-keystore D:/keys/client.p12
+	
+	keytool -genkey -alias client1 -keypass 123456 -keyalg RSA -keysize 1024 -validity 365 -storetype PKCS12 -keystore D:/keys/client1.p12 -storepass 123456
+	命令执行过车中一路回车
+
+3.让服务器信任客户端证书
+	a.由于不能直接将PKCS12格式的证书库导入，必须先把客户端证书导出为一个单独的CER文件，使用如下命令：
+		keytool -export -alias client -keystore D:/keys/client.p12 -storetype PKCS12 -keypass 123456 -file D:/keys/client.cer
+		注意：Keypass：指定CER文件的密码，但会被忽略，而要求重新输入
+	b.将该文件导入到服务器的证书库，添加为一个信任证书：
+		keytool -import -v -file D:/keys/client.cer -keystore D:/keys/tomcat.keystore -storepass 123456
+	c.完成之后通过list命令查看服务器的证书库，可以看到两个证书，一个是服务器证书，一个是受信任的客户端证书：
+		keytool -list -v -keystore D:/keys/tomcat.keystore
+
+4.让客户端信任服务器证书
+	a.由于是双向SSL认证，客户端也要验证服务器证书，因此，必须把服务器证书添加到浏览器的“受信任的根证书颁发机构”。
+		由于不能直接将keystore格式的证书库导入，必须先把服务器证书导出为一个单独的CER文件，使用如下命令：
+		keytool -keystore D:/keys/tomcat.keystore -export -alias tomcat6 -file D:/keys/server.cer
+	b.双击server.cer文件，按照提示安装证书，将证书填入到“受信任的根证书颁发机构”。
+		填入方法：打开浏览器 -工具 - internet选项-内容- 证书-把中级证书颁发机构里的www.localhost.com
+		(该名称即时你前面生成证书时填写的名字与姓氏)证书导出来-再把导出来的证书导入  受信任的根颁发机构  就OK了。
+
+5.配置Tomcat服务器
+	<Connector  port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol" SSLEnabled="true"
+	maxThreads="150"
+	scheme="https"
+	secure="true"
+	clientAuth="true"
+	sslProtocol="TLS"
+	keystoreFile="D:/keys/tomcat.keystore"
+	keystorePass="123456"
+	truststoreFile="D:/keys/tomcat.keystore"
+	truststorePass="123456" />
+	 
+	属性说明：
+		clientAuth:设置是否双向验证，默认为false，设置为true代表双向验证
+		keystoreFile:服务器证书文件路径
+		keystorePass:服务器证书密码
+		truststoreFile:用来验证客户端证书的根证书，此例中就是服务器证书
+		truststorePass:根证书密码
+
+	注意：
+		①设置clientAuth属性为True时，需要手动导入客户端证书才能访问。
+		②要访问https请求 需要访问8443端口，访问http请求则访问Tomcat默认端口（你自己设置的端口，默认8080）即可。
+
+6.总结：
+	经过以上五步，你使用HTTPS 端口为8443 进行访问的时候 就是经过SSL信息加密，不怕被截获了。
+	通话的双方，必须是都拥有证书的端，才能进行会话，换句话说，就是只有安装了咱证书的客户端，才能与服务器通信。
+
+7.小贴士
+	强制 https 访问
+	在 tomcat /conf/web.xml 中的 </welcome- file-list> 后面加上这
+	<login-config>    
+	<!-- Authorization setting for SSL -->    
+	<auth-method>CLIENT-CERT</auth-method>    
+	<realm-name>Client Cert Users-only Area</realm-name>    
+	</login-config>    
+	<security-constraint>    
+	<!-- Authorization setting for SSL -->    
+	<web-resource-collection >    
+	<web-resource-name >SSL</web-resource-name>    
+	<url-pattern>/*</url-pattern>    
+	</web-resource-collection>    
+	<user-data-constraint>    
+	<transport-guarantee>CONFIDENTIAL</transport-guarantee>    
+	</user-data-constraint>    
+	</security-constraint> 
+	完成以上步骤后，在浏览器中输入http的访问地址也会自动转换为https了。
+
+附录1:
+	keytool常用命令 
+	-alias       产生别名 
+	-keystore    指定密钥库的名称(就像数据库一样的证书库，可以有很多个证书，cacerts这个文件是jre自带的， 
+				 你也可以使用其它文件名字，如果没有这个文件名字，它会创建这样一个) 
+	-storepass   指定密钥库的密码 
+	-keypass     指定别名条目的密码 
+	-list        显示密钥库中的证书信息 
+	-v           显示密钥库中的证书详细信息 
+	-export      将别名指定的证书导出到文件 
+	-file        参数指定导出到文件的文件名 
+	-delete      删除密钥库中某条目 
+	-import      将已签名数字证书导入密钥库 
+	-keypasswd   修改密钥库中指定条目口令 
+	-dname       指定证书拥有者信息 
+	-keyalg      指定密钥的算法 
+	-validity    指定创建的证书有效期多少天 
+	-keysize     指定密钥长度 
+ 
+	使用说明：
+		导入一个证书命令可以如下： 
+		keytool -import -keystore cacerts -storepass 666666 -keypass 888888 -alias alibabacert -file C:\alibabajava\cert\test_root.cer 
+		其中-keystore cacerts中的cacerts是jre中默认的证书库名字，也可以使用其它名字 
+		-storepass 666666中的666666是这个证书库的密码 
+		-keypass 888888中的888888是这个特定证书的密码 
+		-alias alibabacert中的alibabacert是你导入证书的别名，在其它操作命令中就可以使用它 
+		-file C:\alibabajava\cert\test_root.cer中的文件路径就是要导入证书的路径 
+
+		浏览证书库里面的证书信息，可以使用如下命令： 
+		keytool -list -v -alias alibabacert -keystore cacerts -storepass 666666 
+
+		要删除证书库里面的某个证书，可以使用如下命令： 
+		keytool -delete -alias alibabacert -keystore cacerts -storepass 666666 
+
+		要导出证书库里面的某个证书，可以使用如下命令： 
+		keytool -export -keystore cacerts -storepass 666666 -alias alibabacert -file F:\alibabacert_root.cer 
+
+		要修改某个证书的密码（注意：有些数字认证没有私有密码，只有公匙，这种情况此命令无效）
+
+		这个是交互式的，在输入命令后，会要求你输入密码 
+		keytool -keypasswd -alias alibabacert -keystore cacerts 
+
+		这个不是交互式的，输入命令后直接更改
+		Keytool -keypasswd -alias alibabacert -keypass 888888 -new 123456 -storepass 666666 -keystore cacerts
 /********************************************/
 /********************************************/
 /********************************************/
