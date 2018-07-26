@@ -9005,6 +9005,7 @@ FROM
 五、Docker版Hello World测试
 	1.拉取hello-world镜像：docker pull hello-world
 	2.查看服务中的镜像列表：docker images
+		docker history repository:tag  //查看镜像的变更历史，包括构建层级
 	3.查看服务器中运行的容器：docker ps  //添加-l选项可以查看最近被创建的容器
 	4.运行容器
 		docker run hello-world  //如果打印出Hello from Docker!表示运行正常
@@ -9051,6 +9052,46 @@ FROM
 		还有一种不推荐的退出方式，直接用exit命令退出，此时容器会停止运行，然后再用restart myCentos命令重启容器
 	3.docker attach myCentos  //再次进入容器命令行界面进行其他操作
 TODO 根据dockerfile构建镜像
+十九、
+	1.编写DockerFile构建文件
+		FROM scratch  //所有镜像的基镜像，类似基类
+		ADD centos-7-docker.tar.xz /
+
+		LABEL org.label-schema.schema-version = "1.0" \
+			org.label-schema.name="CentOS Base Image" \
+			org.label-schema.vendor="CentOS" \
+			org.label-schema.license="GPLv2" \
+			org.label-schema.build-date="20180531"
+
+		CMD ["/bin/bash"]  //启动容器后容器内默认执行的命令
+	2.执行docker build命令构建一个docker镜像
+	3.执行docker run命令用镜像启动一个容器
+/********************************************/
+DockerFile的构建过程
+一、基础知识
+	1.保留关键字指令必须为大写字母，且其后至少跟一个参数
+	2.指令按照从上到下顺序执行
+	3."#"用于注释
+	4.每条指令都会创建一个新的镜像曾，并自动对镜像进行提交
+二、DockerFile执行流程
+	1.docker从基础镜像运行一个容器
+	2.执行一条指令并对容器做出修改
+	3.执行类似docker commit的操作提交一个新镜像层
+	4.docker再基于刚提交的镜像运行一个新容器
+	5.执行dockerfile的下一条指令，直到执行完所有指令
+三、保留关键字
+	FROM  #基础镜像，可以时祖先镜像，也可以时其他自定义镜像
+	MAINTAINER  #作者
+	RUN  #镜像构建时需要运行的额外命令
+	EXPOSE  #启动后容器对外暴露的端口号
+	WORKDIR  #用户登录容器后的初始工作目录
+	ENV  #在构建过程中设置环境变量，跟key-value型参数，可在其他地方应用
+	COPY  #将构建上下文目录中（源路径）的文件或目录复制到新的一层镜像（目的路径）位置
+	ADD  #包含COPY的功能，同时还会自动对url和压缩文件进行访问和解压处理
+	VOLUME  #用于数据保存和持久化工作
+	CMD  #指定容器启动时要执行的命令，其后可跟多个命令作为参数，但容器启动时只有最后一个会生效，且当docker run后面有命令时，这些内置的命令都不会生效，会被覆盖
+	ENTEYPOINT  #与cmd命令功能相同，但其后命令不会被docker run命令后所跟的命令覆盖
+	ONBUILD  #指定一个被动触发指令，当此镜像被某子镜像继承，本命令就会被触发执行
 /********************************************/
 单点登录CAS
 1.用户访问业务系统，业务系统中的CAS-Client检查请求中是否包含token，如果没有就带着业务系统的回路url将请求重定向到CAS-Server。
