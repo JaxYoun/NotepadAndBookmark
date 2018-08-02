@@ -8194,7 +8194,7 @@ Nginx
 	但是映射的内存为本地内存它不受JVM管理，所以存在GC延迟等问题（磁盘IO仍然时阻塞的）。
 2.网络IO引入了支持了异步处理机制，是非阻塞的，基于事件机制的多路复用技术，主要在这方面实现性能的提升。
 /********************************************/
-NIO
+Java之NIO
 一、对于磁盘和网络：
 		BIO面Stream，流是单向的，流除了负责连接与传输，同时也负责数据的包装。
 		NIO面向Channel和Buffer，通道是双向的，只负责连接与传输，由Buffer负责数据的包装。
@@ -8218,13 +8218,38 @@ NIO
 		BIO和非直接缓冲区的读写过程：
 			App从磁盘读取数据过程：App向系统发出read请求，首先系统将数据从磁盘读取到内核地址空间，再从内核地址空间copy到用户地址空间，App最后才从用户地址空间读取数据。
 			App向磁盘写入数据过程：App向系统发出write请求，App首先将数据写入用户地址空间，再将数据从用户地址空间copy到内核地址空间，然后再将数据从内核地址空间写入磁盘。
-		直接缓冲区的数据读写过程：
+		直接缓冲区的数据读写过程：（仅ByteBuffer支持）
 			直接再系统内存中建立缓冲区，数据读写路径变为这样：
 				磁盘<-->直接缓冲区<-->APP
 				省略了一个copy过程，提高了效率，此即为ZeroCopy机制，适合大量或长时间停留内存的数据。
-				弊端：内存消耗更大，内存的回收由系统控制。
+				弊端：内存消耗更大，内存的回收由系统控制，JVM持有资源得不到及时释放。
 三、通道
+	1.早期计算机IO接口也由CPU独立负责，当IO并发较高时大量CPU计算资源消耗在了IO接口的管理上。
+	2.后来设计了直接存储器DMA来全权管理IO接口，但是DMA仍然会向CPU申请权限，但是读写请求量过大时花发生总线冲突问题，也会影响性能。
+	3.后来内存和IO接口间添加了Channel，它完全独立的附属与CPU的处理器，功能上彻底和CPU独立，
 	
+	1、用于源节点和目标节点的连接，在JavaNIO里负责Buffer中数据的传输，需要配合Buffer才能传输数据。
+	2、通道分类
+		|--FileChannel  //用于文件IO
+		|--SocketChannel  //用于TCP客户端
+		|--ServerSocketChannel  //用于TCP服务器端
+		|--DatagramChannel  //用于UDP
+	
+	3、获取通道
+		1.Java针对支持通道的类提供了getChannel()方法
+			文件IO：
+				FileInputStream
+				FileOutputStream
+				RandomAccessFile
+			网络IO：
+				Socket
+				ServerSocket
+				DatagramSocket
+		2.JDK1.7后，提供了NIO.2针对各个通道类提供了静态的open()方法
+		3.JDK1.7后，提供了NIO.2 Files工具类提供了newByteChannel()方法
+	4、通道间的数据传输
+		transferFrom()
+		tranferTo()
 /********************************************/
 1.点对点：(point to point， queue)
 	消息生产者生产消息发送到queue中，然后消息消费者从queue中取出并且消费消息。
