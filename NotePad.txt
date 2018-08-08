@@ -8230,10 +8230,13 @@ Java之NIO
 	
 	1、用于源节点和目标节点的连接，在JavaNIO里负责Buffer中数据的传输，需要配合Buffer才能传输数据。
 	2、通道分类
-		|--FileChannel  //用于文件IO
+		|--FileChannel  //用于文件IO，只有阻塞模式
 		|--SocketChannel  //用于TCP客户端
 		|--ServerSocketChannel  //用于TCP服务器端
 		|--DatagramChannel  //用于UDP
+		
+		|--Pipe.SinkChannel、
+		|--Pipe.SourceChannel）
 	
 	3、获取通道
 		1.Java针对支持通道的类提供了getChannel()方法
@@ -8265,6 +8268,178 @@ Java之NIO
 	Selector才真正将这个Channel分配给服务器的一个或多个线程去处理，所以，如果某个请求的数据没有完全准备就绪，
 	它就不会占用一个线程，服务器就可以用这些省下来的线程资源去处理别的就绪连接或者其他事情，线程的利用率就提高了，
 	CPU的真实利用率也提高了。
+4.Pipe是两个线程间的单向数据连接
+
+
+/********************************************/
+Java之BIOSocket通信演变
+一、对于所有请求只起一条线程，该线程即负责连接的建立又负责后续业务逻辑处理，所以必须等待上一次请求处理完毕，
+下一次请求才会得到机会连接，也就是上一次连接的阻塞会导致下依此连接的等待。
+public void startService(){
+ 2         while (true) {
+ 3             Socket socket = null;
+ 4             try {
+ 5                 socket = serverSocket.accept();
+ 6                 System.out.println("new connection accepted " + socket.getInetAddress() + ":" + socket.getPort());
+ 7                 BufferedReader br = getBufferReader(socket);//获得socket输入流,并将之包装成BufferedReader
+ 8                 PrintWriter pw = getWriter(socket);//获得socket输出流,并将之包装成PrintWriter
+ 9                 String msg = null;
+10                 while ((msg = br.readLine()) != null) {
+12                     pw.println(echo(msg));//服务端的处理逻辑,将client发来的数据原封不动再发给client
+13                     pw.flush();
+14                     if(msg.equals("bye"))//若client发送的是 "bye" 则关闭socket
+15                         break;
+16                 }
+17             } catch (IOException e) {
+18                 e.printStackTrace();
+19             } finally {
+20                 try{
+21                     if(socket != null)
+22                         socket.close();
+23                 }catch(IOException e){e.printStackTrace();}
+24             }
+25         }
+26     }
+上面用的是while(true)循环，这样，Server不是只接受一次Client的连接就退出，而是不断地接收Client的连接。
+1）第5行，服务器线程执行到accept()方法阻塞，直至有client的连接请求到来。
+2）当有client的请求到来时，就会建立socket连接。从而在第8、9行，就可以获得这条socket连接的输入流和输出流。输入流(BufferedReader)负责读取client发过来的数据，输出流(PrintWriter)负责将处理后的数据返回给Client。
+下面来详细分析一下建立连接的过程：
+Client要想成功建立一条到Server的socket连接，其实是受很多因素影响的。其中一个就是：【Server端的“客户连接请求队列长度”】。它可以在创建ServerSocket对象时在构造方法中的backlog参数指定：JDK中 backlog参数的解释是： 
+requested maximum length of the queue of incoming connections.
+    public ServerSocket(int port, int backlog) throws IOException {
+        this(port, backlog, null);
+    }
+看到了这个：incoming commections 有点奇怪，因为它讲的是“正在到来的连接”，那什么又是incoming commections 呢？这个就也TCP建立连接的过程有关了。
+TCP建立连接的过程可简述为三次握手。
+第一次：Client发送一个SYN包，Server收到SYN包之后回复一个SYN/ACK包，此时Server进入一个“中间状态”--SYN RECEIVED 状态。
+这可以理解成：Client的连接请求已经过来了，只不过还没有完成“三次握手”。因此，【Server端需要把当前的请求保存到一个队列里面】，
+直至当Server再次收到了Client的ACK之后，Server进入ESTABLISHED状态，此时：serverSocket 从accpet() 阻塞状态中返回。
+也就是说：当第三次握手的ACK包到达Server端后，Server从该请求队列中取出该连接请求，同时Server端的程序从accept()方法中返回。
+那么这个请求队列长度，就是由 backlog 参数指定。那这个队列是如何实现的呢？这个就和操作系统有关了，感兴趣的可参考：How TCP backlog works in Linux
+此外，也可以看出：服务器端能够接收的最大连接数 也与 这个请求队列有关。
+对于那种高并发场景下的服务器而言，
+	1.首先就是请求队列要足够大。
+	2.其次就是当连接到来时，要能够快速地从队列中取出连接请求并建立连接，因此，执行建立连接任务的线程最好不要阻塞。
+现在来分析一下上面那个：单线程处理程序可能会出现的问题：
+服务器始终只有一个线程执行accept()方法接受Client的连接。建立连接之后，又是该线程处理相应的连接请求业务逻辑，这里的业务逻辑是：把客户端发给服务器的数据原封不动地返回给客户端。
+显然，这里一个线程干了两件事：接受连接请求 和 处理连接（业务逻辑）。好在这里的处理连接的业务逻辑不算复杂，如果对于复杂的业务逻辑 而且 有可能在执行业务逻辑过程中还会发生阻塞的情况时，那此时服务器就再也无法接受新的连接请求了。
+
+二、启动一条线程专门负责所有请求连接的建立，针对每个请求新起一条业务逻辑线程，即使有业务线程阻塞了，也不会影响其他连接的建立与后续逻辑的处理。
+1     public void service() {
+ 2         while (true) {
+ 3             Socket socket = null;
+ 4             try {
+ 5                 socket = serverSocket.accept();//接受client的连接请求
+ 6                 new Thread(new Handler(socket)).start();//每接受一个请求 就创建一个新的线程 负责处理该请求
+ 7             } catch (IOException e) {
+ 8                 e.printStackTrace();
+ 9             } 
+10             finally {
+11                 try{
+12                     if(socket != null)
+13                         socket.close();
+14                 }catch(IOException e){e.printStackTrace();}
+15             }
+16         }
+17     }
+从上面的单线程处理模型中看到：如果线程在执行业务逻辑中阻塞了，服务器就不能接受用户的连接请求了。
+而对于一请求一线程模型而言，每接受一个请求，就创建一个线程来负责该请求的业务逻辑。尽管，这个请求的业务逻辑执行时阻塞了，
+只要服务器还能继续创建线程，那它就还可以继续接受新的连接请求。此外，负责建立连接请求的线程 和 负责处理业务逻辑的线程分开了。
+业务逻辑执行过程中阻塞了，“不会影响”新的请求建立连接。
+然而，如果Client发送的请求数量很多，那么服务器将会创建大量的线程，而这是不现实的。有以下原因：
+	1）创建线程是需要系统开销的，线程的运行系统资源（内存）。因此，有限的硬件资源 就限制了系统中线程的数目。
+	2）当系统中线程很多时，线程的上下文开销会很大。比如，请求的业务逻辑的执行是IO密集型任务，经常需要阻塞，这会造成频繁的上下文切换。　　
+	3）当业务逻辑处理完成之后，就需要销毁线程，如果请求量大，业务逻辑又很简单，就会导致频繁地创建销毁线程。
+
+三、起一条专门的线程负责连接的建立，业务逻辑线程交给线程池去处理，既有效的将连接处理和业务逻辑两类线程分开，有用资源池机制控制了线程开销。
+1 public class EchoServerThreadPool {
+ 2     private int port = 8000;
+ 3     private ServerSocket serverSocket;
+ 4     private ExecutorService executorService;
+ 5     private static int POOL_SIZE = 4;//每个CPU中线程拥有的线程数
+ 6     
+ 7     public EchoServerThreadPool()throws IOException {
+ 8         serverSocket = new ServerSocket(port);
+ 9         executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * POOL_SIZE);
+10         System.out.println("server start");
+11     }
+12     
+13     public void service(){
+14         while(true){
+15             Socket socket = null;
+16             try{
+17                 socket = serverSocket.accept();//等待接受Client连接
+18                 executorService.execute(new Handler(socket));//将已经建立连接的请求交给线程池处理
+19             }catch(IOException e){
+20                 e.printStackTrace();
+21             }
+22         }
+23     }
+24     public static void main(String[] args)throws IOException{
+25         new EchoServerThreadPool().service();
+26     }
+27 }
+采用线程池最大的优势在于“重用线程”，有请求任务来了，从线程池中取出一个线程负责该请求任务，任务执行完成后，线程自动归还到线程池中，
+而且java.util.concurrent包中又给出了现成的线程池实现。因此，这种方式看起来很完美，但还是有一些问题是要注意的：
+1）线程池有多大？即线程池里面有多少个线程才算比较合适？这个要根据具体的业务逻辑来分析，而且还得考虑面对的使用场景。
+一个合理的要求就是：尽量不要让CPU空闲下来，即CPU的复用率要高。如果业务逻辑是经常会导致阻塞的IO操作，一般需要设置 N*(1+WT/ST)个线程，
+其中N为可用的CPU核数，WT为等待时间，ST为实际占用CPU运算时间。如果业务逻辑是CPU密集型作业，那么线程池中的线程数目一般为N个或N+1个即可，
+因为太多了会导致CPU切换开销，太少了（小于N），有些CPU核就空闲了。
+2）线程池带来的死锁问题
+线程池为什么会带来死锁呢？在JAVA 1.5 之后，引入了java.util.concurrent包。线程池则可以通过如下方式实现：
+ExecutorService executor = Executors.newSingleThreadExecutor();
+//ExecutorService executor = Executors.newFixedThreadPool(2);
+executor.execute(task);// task implements Runnable
+executor.shutdown();
+Executors可以创建各种类型的线程池。如果创建一个缓存的线程池:
+ExecutorService executor = Executors.newCachedThreadPool();
+对于高负载的服务器而言，在缓存线程池中，被提交的任务没有排成队列，而是直接交给线程执行。也就是说：只要来一个请求，如果线程池中没有线程可用，
+服务器就会创建一个新的线程。如果线程已经把CPU用完了，此时还再创建线程就没有太大的意义了。因此，对于高负载的服务器而言，一般使用的是固定数目的线程池(来自Effective Java)
+主要有两种类型的死锁：①线程A占有了锁X，等待锁Y，而线程B占用了锁Y，等待锁X。因此，向线程池提交任务时，要注意判断：提交了的任务(Runnable对象)会不会导致这种情况发生？
+②线程池中的所有线程在执行各自的业务逻辑时都阻塞了，它们都需要等待某个任务的执行结果，而这个任务还在“请求队列”里面未提交！
+3）来自Client的请求实在是太多了，线程池中的线程都用完了(已无法再创建新线程)。此时，服务器只好拒绝新的连接请求，导致Client抛出：ConnectException。
+4）线程泄露
+导致线程泄露的原因也很多，而且还很难发觉，网上也有很多善于线程池线程泄露的问题。比如说：线程池中的线程在执行业务逻辑时抛异常了，怎么办？
+是不是这个工作线程就异常终止了？那这样，线程池中可用的线程数就少了一个了？看一下JDK ThreadPoolExecutor 线程池中的线程执行任务的过程如下：
+复制代码
+       try {
+            while (task != null || (task = getTask()) != null) {
+                w.lock();
+                if ((runStateAtLeast(ctl.get(), STOP) ||
+                     (Thread.interrupted() &&
+                      runStateAtLeast(ctl.get(), STOP))) &&
+                    !wt.isInterrupted())
+                    wt.interrupt();
+                try {
+                    beforeExecute(wt, task);
+                    Throwable thrown = null;
+                    try {
+                        task.run();
+                    } catch (RuntimeException x) {
+                        thrown = x; throw x;
+                    } catch (Error x) {
+                        thrown = x; throw x;
+                    } catch (Throwable x) {
+                        thrown = x; throw new Error(x);
+                    } finally {
+                        afterExecute(task, thrown);
+                    }
+                } finally {
+                    task = null;
+                    w.completedTasks++;
+                    w.unlock();
+                }
+            }
+            completedAbruptly = false;
+        } finally {
+            processWorkerExit(w, completedAbruptly);
+        }
+复制代码
+从上面源码看出：线程执行出异常后是由 afterExecute(task, thrown) 来处理的。至于对线程有何影响，我也没找到很好的解释。
+另外一种引起线程泄露的情况就是：线程池中的工作线程在执行业务逻辑时，一直阻塞下去了。那这也意味着这个线程基本上不干活了，
+这就影响了线程池中实际可用的线程数目。如何所有的线程都是这种情况，那也无法向线程池提交任务了。此外，关于线程池带来的问题还可参考：
+Java编程中线程池的风险规避  另外， 关于JAVA线程池使用可参考下：Java的Executor框架和线程池实现原理
+到这里，阻塞通信的三种模式都已经介绍完毕了。在网上发现了一篇很好的博文，刚好可以配合我这篇文章的代码演示一起来看：架构设计：系统间通信（1）——概述从“聊天”开始上篇
 /********************************************/
 1.点对点：(point to point， queue)
 	消息生产者生产消息发送到queue中，然后消息消费者从queue中取出并且消费消息。
@@ -9384,7 +9559,34 @@ Java中符号引用和直接直接引用的区别
 	shutdown执行后池内正在执行的线程会继续执行直到结束，未执行的线程将不再执行。
 	shutdownNow执行后池内正在执行的线程立即停止，未执行的也不再执行。
 /********************************************/
+LiuYudo
+一、从学习方式上划分
+	1、监督学习：训练数据即有特征又有标签、得分等结果，主要包括分类和回归。
+	2、非监督学习：主要用于辅助监督学习。
+		比如聚类分析，
+		对数据降维：特征提取（去除无关特征），
+					特征压缩与合并（PCA），尽量少的损失信息的前提下将高维特征压缩为低维特征，以降低处理复杂度，另一方面时方便可视化。
+		异常检测：剔除离群值，因为离群值不利与算法发掘数据的普适性规律。
+	3、半监督学习：针对部分数据有标签，部分没有标签的数据集，先用无监督手段处理然后再用监督学习方式处理数据。
+	4、增强学习：模型根据环境的反馈逐渐调整内部参数来调整模型的过程。
+二、
+	1、在线学习：实时的将预测结果和正确结果返回给模型用来训练，一旦数据有误会导致模型失去准度，需要实时监测数据的异常。
+	2、离线学习：在实验环境将模型训练好，然后部署到线上，优点时模型上线后就固定了，不用考虑生产数据的演变。
+	问题：如何适应环境的变化
+		方案：定时重新批量学习，但是存在运算量巨大的问题，不符合实时性要求比较高的场景。
+三、
+	1、参数学习：一旦学到了参数，训练集就没有用了。
+	2、非参数学习：不对模型进行假设，但并不是说没有参数的参与。
 /********************************************/
+数据非常重要
+目前仍是数据驱动的
+	1.收集足够多的数据
+	2.提高数据质量
+	3.提高数据的代表性
+	4.利用特征工程研究更重要的特征
+奥卡姆的剃刀：简单的就是好的，即不要对模型有过多的假设。
+没有免费的午餐：可以用严格的数学推导出任意两个性能的理论期望性能时相同的，但针对特定领域的特定问题不同算法表现有差异，
+				脱离具体问题来比较算法的好坏时没有意义的，所以，在面临具体问题是尝试多种算法并进行对比实验是很有必要的。
 /********************************************/
 /********************************************/
 /********************************************/
