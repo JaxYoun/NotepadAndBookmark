@@ -8491,6 +8491,12 @@ HashOperations的void put(H key, HK hashKey, HV value);方法具有三个参数�
 public class RedisSessionConfig {
 }
 /********************************************/
+Redis事件通知机制
+1、可以利用Redis键过期触发客户端其他事件，利用这一机制可以实现定时器。
+2、出于性能方面的考量，Redis服务器默认是关闭了此功能的所以需要在配置文件redis.windows-service.conf中打开，notify-keyspace-events Ex，只需要追加“Ex”参数。
+3、需要java项目中配置监听器，监听器容器，监听器线程池。
+4、项目启动后如果redis内有key过期，java项目将收到通知。
+/********************************************/
 Repository<T, ID extends Serializable>;  //顶层接口，只是是一个标记接口
 CrudRepository<T, ID extends Serializable> extends Repository<T, ID>  //中级接口，主要负责CRUD操作
 PagingAndSortingRepository<T, ID extends Serializable> extends CrudRepository<T, ID>  //次级接口，主要负责分页和排序
@@ -9799,6 +9805,27 @@ public void unlock() {
 2.根据客户端类型，如果页面性请求就返回登录页面，如果是数据性就返回登录提示的json串。
 	解决思路：首先当客户端请求的地址需要认证时不重定向到页面，而是转发到一个专门的controller，在这个Cotroller方法中判断请求的性质，
 	如果是页面性请求就返回登录页面，如果是数据性请求就返回401状态码及提示信息。
+/********************************************/
+spring-security认证流程源码：
+一、到达认证过滤器UsernamePasswordAuthenticationFilter，它负责处理最传统的用户名+密码类型的认证过程。
+	1.调用attemptAuthentication()方法拿到请求中的用户名和密码构造了一个UsernamePasswordAuthenticationToken对象，
+		这个类是Authentication接口的一个实现，但这个对象的被暂时设为未认证。
+	2.将构造的这个token对象传递给AuthenticationManager接口的实现ProviderManager的authenticate()方法。这个方法会获取token的类型，
+		然后便利spring-security所支持的认证类型处理器，用匹配上的认证器对传进来的token进行认证。调用的是AbstractUserDetailsAuthenticationProvider
+		这个抽象类实现类的authenticate()方法。
+	5.在这个方法中会引入自定义实现的UserDetailsService并调用loadUserByUsername()方法从数据库获取用户数据，
+		然后对从DB中获取的用户数据进行各个属性的匹配，这其中包括凭证加密匹配和四个布尔值的预检查和后检查，遇到不匹配的项就抛出相应的异常。
+	6.如果前面的各项检查都通过了，就重新构造一个成功认证的认证信息。
+	7.至于登录成功与否都会调用父类AbstractAuthenticationProcessingFilter中的成功和失败相应的处理方法。
+二、认证结果如何在多个请求间共享
+	1.AbstractAuthenticationProcessingFilter抽象类中successfulAuthentication()方法中会访问SecurityContextHolder.getContext()对认证信息进行存储。
+		这个SecurityContextHolder相当于一个ThreadLocal的变量，在本次请求的的各处都可以访问。
+三、如何获取用户的认证信息
+	
+/********************************************/
+/********************************************/
+/********************************************/
+/********************************************/
 /********************************************/
 /********************************************/
 /********************************************/
