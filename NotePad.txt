@@ -4763,6 +4763,19 @@ public class TestDynamicBeanPropertySet extends TestCase {
 	export PATH=$PATH:$NODEJS_HOME/bin
 4.用版本查看命令node -v测试是否安装成功。
 /********************************************/
+Windows安装nodejs并开启一个简单的web项目
+1.在机器上执行node -v，如果提示命令无效，说明未安装nodejs，需要去官网下载安装包，然后在机器上安装。
+2.只想node -v如果显示版本信息，表示已成功安装。
+3.用npm -v命令如果显示版本信息，说明npm也安装成功了，npm是node内置的包管理工具，类似于yum，
+	但由于npm管理的大部分包在国外，所以下载速度会比较慢，cnpm是淘宝对npm做的国内代理仓库，下载速度会快很多，
+	用如下命令安装cnpm：npm install cnpm -g --registry=https://registry.npm.taobao.org。
+4.Express框架是nodejs的web框架，需要安装，cnpm install -g express-generator
+5.新建一个目录作为测试空间如：F:/nodejs/justFrontSite。
+6.进入项目空间，执行express app构建一个项目，执行后会出现一个app目录，其中自动建立了项目基本结构。
+7.在app目录下执行：cnpm install命令将项目打包安装。
+8.在app目录下执行：cnpm start命令启动项目，默认端口3000。
+9.在浏览器输入localhost:3000如果出现Express页面，表示一个简单的基础项目搭建成功了。
+/********************************************/
 $ unzip cdap-sdk-4.1.1.zip  //解压二进制包
 $ cd cdap-sdk-4.1.1  //进入解压后目录
 $ ./bin/cdap sdk start  //启动cdap服务器
