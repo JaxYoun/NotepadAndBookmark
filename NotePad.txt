@@ -9677,6 +9677,7 @@ Java值类型
 	1.java对8个原始类型，在实现层面上是用的值类型，即赋值操作是通过直接拷贝变量值来实现的。
 	2.在语义层面上是没有的，也就是说从开发人员的角度来说，在代码中对原始类型变量的各种赋值操作，最终表现的结果和引用类型是一致的。
 /********************************************/
+Gradle与Maven所要达到的目的和方式（比如使用GAV定位依赖）都是一致的，但是Gradle使用的是Groove脚本来描述（编程式），天生比Maven的xml语言灵活、方便、简洁。
 Gradle本地化配置，建立好Gradle项目后往往需要修改一些参数才能正常运行
 1.配置Gradle程序包地址：项目根目/gradle/wrapper/gradle-wrapper.properties，编辑distributionUrl=file:///D:ProgramFilse/gradle-4.9/gradle-4.9-bin.zip
 2.配置远程仓库（阿里云）地址：项目根目录/gradle.build，编辑repositories下的maven仓库镜像路径：
