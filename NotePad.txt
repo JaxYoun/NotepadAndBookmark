@@ -8747,6 +8747,30 @@ mvn deploy:deploy-file -DgroupId=com.yang -DartifactId=fastdfs-client-java -Dver
 			</resource>
 		</resources>
 	</build>
+
+	<build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.*</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 4.补充：这段代码的意思就是把src/main/java目录下所有的xml文件都包含进去，其中${basedir} 是MAVEN的内置变量，表示项目根目录。
 	同样，想包含其他什么文件，比如.properties文件，再加一个<include>标签类似的写法即可。
 
