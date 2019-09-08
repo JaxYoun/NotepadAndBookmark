@@ -2305,14 +2305,16 @@ js中的中文乱码解决方案：
 	git remote add origin https://github.com/JaxYoun/FontServer.git  //将本地仓库与远程仓库同步
 	git push -u origin master  //推送到远程仓库
 -------------------------------------------------------------------
-echo "# NotepadAndBookmark" >> README.md
+…or create a new repository on the command line
+echo "# SpringBootDubbo" >> README.md
 git init
 git add README.md
 git commit -m "first commit"
-git remote add origin git@github.com:JaxYoun/NotepadAndBookmark.git
+git remote add origin https://github.com/JaxYoun/SpringBootDubbo.git
 git push -u origin master
 -------------------------------------------------------------------
-git remote add origin git@github.com:JaxYoun/NotepadAndBookmark.git
+…or push an existing repository from the command line
+git remote add origin https://github.com/JaxYoun/SpringBootDubbo.git
 git push -u origin master
 -------------------------------------------------------------------
 git commit -m "yang first commit!"  //将内容提交到本地仓库本地
@@ -11054,8 +11056,66 @@ BitCoin系统的设计目标是simple、robust，but not efficient。
 				
 	2.启发式规则对查询优化的指导：
 /********************************************/
+Zookeeper
+是一个分布式的小文件存储系统，是一个对等集群，主节点是通过选举得出的。
+功能特性：
+1.全局一致性：集群内的各server节点都保存了同一份数据的副本，无论客户端访问哪一个节点，得到的数据都是一样的。
+2.可靠性：如果一个节点上的数据被客户端修改，那么其他所有节点上的数据都将同步被修改。
+3.顺序性：
+	a.全局一致性：在一个节点上，如果事件A比事件B先发生，那么在其他节点上，事件A也比事件B先发生。
+	b.偏序一致性：同一个客户端，如果他先对集群发布A事件，再发布B事件，那么在集群中及集群各个节点上A事件同样比B事件先发生。
+4.数据更新的原子性：一次数据更新操作是不可分割且不可被打断的，要么成功要么失败（根据半数原则判定），没有中间状态。
+5.实时性：保证客户端在一个时间间隔内获知服务器的更新信息，或者某服务器节点失效的消息。
+
+节点角色：
+leader：是集群的核心，是事务请求的唯一调度和处理者，保证了集群内事务处理的顺序性，同时还是集群内各服务节点的调度者，比如管理follower状态跟踪等。
+		当follower节点接收到事务性数据更新（写操作）时不直接执行，而是将操作转发给leader，由leader做统一编号、执行等操作形成一个完整的事务。
+follower：处理集群的非事务请求（读操作），还可接收客户端的事务性请求然后转发给leader（这是出于负载均衡和水平扩容考虑），还需在旧leader故障后参与leader的选举和投票。
+observer：集群读负载较大时，可以增设观察者，其绝大部分功能与follower重叠，唯一的不同就是他不参与leader的选举和投票，增设它的唯一目的就是在不影响集群事务处理能力的前提下提升集群非事务处理能力。
+数据模型：
+1.znode兼具文件和目录的特性。
+2.znode具有原子性。
+3.znode存储的数据有大小限制。
+4.znode通过绝对路径引用。
 /********************************************/
+# spring-boot-dubbo
+## 一个spring-boot集成dubbo的多模块项目
+## 包括rest、idl、service、dao、domain、common六个子模块
+## 其中rest和service是独立微服务，rest是消费者，service是生产者
+## 其他模块为这两个模块提供直接或间接依赖
 /********************************************/
+Windows安装MongoDB
+1.傻瓜式安装
+2.配置系统环境变量
+	新建系统变量：MONGODB_HOME D:\ProgramFiles\MongoDB\Server\3.6
+	将其纳入系统path: %MONGODB_HOME%/bin
+	验证：执行命令mongod，如果配置成功就会显式mongodb相关参数
+3.准备数据存储路径：新建目录 D:\mongodb\data //如果将此目录创建为 C:\data\db，数据库启动时将默认使用此目录，不需要在启动命令中使用参数指定
+4.启动：mongod --dbpath D:\mongodb\data --port 27017  //分别指定数据存储路径和监听端口，如果使用默认存储路径和端口，后面的参数都可以不加
+5.shell 命令：
+	mongo  //打开客户端
+	show dbs //查看有哪些数据库，等价于show databases
+	use yang_base  //切换到指定数据库中
+	db  //显示当前所在的数据库
+	show collections //查看当前数据库下有哪些集合
+6.CRUD操作
+	db.c_role.insert({name: "yang", age: 30, gender: "male"}); //向集合中插入一个dom，如果c_role集合不存在就自动新建该集合
+	//插入多个
+	db.c_role.insert([
+		{_id: "myId", name: "贾宝玉", age: 16, gender: "male"},  //可以自己指定_id作为主键，也可以让系统自动设置主键
+		{name: "林黛玉", age: 15, gender: "female"},
+		{name: "薛宝钗", age: 17, gender: "female"}
+	]);
+	
+	db.c_role.insertOne({"jjjfdsfdsf": "jjfdfdsj"});  //显式插入一个，可读性更高
+	//显式插入多个，可读性更高
+	db.c_role.insertMany([
+		{_id: "myId0", name: "贾宝玉", age: 16, gender: "male"},
+		{name: "林黛玉", age: 15, gender: "female"},
+		{name: "薛宝钗", age: 17, gender: "female"}
+	]);
+	
+	db.c_role.find();  //查询集合下的全部dom
 /********************************************/
 /********************************************/
 /********************************************/

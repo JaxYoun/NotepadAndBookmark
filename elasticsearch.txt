@@ -1,0 +1,32 @@
+一、安装ES主程序：
+1.到官网下载对应平台的安装包并解压
+2.配置jdk：ES7.x对jdk的版本要求高，本地环境jdk一般都跟不上，但ES的发布包中提供了内置OpenJDK，其版本是匹配的，所以为了避免采坑建议使用内置Open-jdk，要使用内置Open-jdk
+	需要手动修改启动配置，让ES_HOME/bin/elasticsearch-env.bat中的【set JAVA="%ES_HOME%\jdk\bin\java.exe" set JAVA_HOME="%ES_HOME%\jdk"】语句提前执行即可。
+  配置jvm参数：打开ES_HOEM/config/jvm.options文件，可以修改占内存分配空间等参数。
+2.解压安装包，执行【./elasticsearch.bat】
+3.在浏览器中访问localhost:9200，验证节点属性
+
+二、安装插件：
+1.执行【./elasticsearch-plugin.bat list】查看本机节点上已安装的插件
+2.执行【./elasticsearch-plugin.bat install analysis-icu】
+
+三、单机启动多节点：
+1.每个节点执行一次
+	【./elasticsearch.bat -E node.name=es_node_0 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_0】
+	【./elasticsearch.bat -E node.name=es_node_1 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_1】
+	【./elasticsearch.bat -E node.name=es_node_2 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_2】
+2.访问【http://localhost:9200/_cat/nodes】验证集群节点状态
+
+四、安装Kibana：
+1.官网下载安装包并解压
+2.双击kibana.bat启动kibana，前提是已启动对应版本的ES
+3.访问http://localhost:5601，在Home界面找到Add sample data链接，选择添加示例数据集并预览数据
+4.打开dev-tools界面，它提供了ES接口调用调试功能，输入【GET _cat/nodes】，查看ES集群状态
+5.Kibana插件
+	【kibanna-plugin list】查看本机节点上已安装的插件
+	【kibanna-plugin install plugin_name】安装插件
+	【kibanna remove】卸载插件
+
+五、安装Logstash
+1.官网下载对应版本的Logstash安装包
+2.
