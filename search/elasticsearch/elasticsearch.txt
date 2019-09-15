@@ -5,17 +5,51 @@
   配置jvm参数：打开ES_HOEM/config/jvm.options文件，可以修改占内存分配空间等参数。
 2.解压安装包，执行【./elasticsearch.bat】
 3.在浏览器中访问localhost:9200，验证节点属性
-
+4.安装管理工具head-UI，由于elasticsearch接口返回的数据是纯文本的json格式，不直观，head工具能提供只管的查看和操作界面
+	0.head依赖Nodejs，安装前需要在本地执行node -v检查本地Nodejs版本
+	1.到github搜索elasticsearch-head，找到mobz/elasticsearch-head，以zip形式下载项目，并解压到本地
+	2.到head解压根目录执行npm install，会开启组件下载过程，等待执行完毕
+		如果国内网络环境不好可以使用淘宝的cnpm来替换npm【npm install cnpm -g --registry=http://registry.npm.taobao.org】
+		然后再执行cnpm install
+	3.执行npm run start启动head
+	4.访问localhost:9100，此时可以看到head的UI界面，但显式【集群健康值: 未连接】，这是由于elasticsearch不允许跨域访问导致的，需要配置elasticsearch和head的链接属性
+	5.首先修改elasticsearch，允许跨域请求，在elasticsearch.yml末尾追加如下两行配置，依此重启elasticsearch和head，重新访问head界面就可以看到与集群正常连接了
+		http.cors.enabled: true
+		http.cors.allow-origin: "*"
+	
 二、安装插件：
 1.执行【./elasticsearch-plugin.bat list】查看本机节点上已安装的插件
 2.执行【./elasticsearch-plugin.bat install analysis-icu】
 
 三、单机启动多节点：
-1.每个节点执行一次
+1.为每个节点执行一次：
 	【./elasticsearch.bat -E node.name=es_node_0 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_0】
 	【./elasticsearch.bat -E node.name=es_node_1 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_1】
 	【./elasticsearch.bat -E node.name=es_node_2 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_2】
+	好处是不需要拷贝安装包和修改配置文件，端口是自增长的，节点角色按照启动顺序来，服务发现也是通过默认地址
 2.访问【http://localhost:9200/_cat/nodes】验证集群节点状态
+
+3.通过修改配置文件来实现集群的搭建：
+	1.分别为每个节点拷贝一个安装包：
+	2.配置主节点：
+		cluster.name: es_clstr_0
+		node.name: mstr
+		node.master: true
+		netword.host: 127.0.0.1
+		http.port: 9200
+	3.配置从节点0：
+		cluster.name: es_clstr_0
+		node.name: slv_0
+		netword.host: 127.0.0.1
+		http.port: 9201
+		discovery.zen.ping.unicast.hosts: ["127.0.0.1"]
+	3.配置从节点1：
+		cluster.name: es_clstr_0
+		node.name: slv_1
+		netword.host: 127.0.0.1
+		http.port: 9202
+		discovery.zen.ping.unicast.hosts: ["127.0.0.1"]
+	4.逐个启动各节点
 
 四、安装Kibana，主要用于数据分析和可视化操作：
 1.官网下载安装包并解压
