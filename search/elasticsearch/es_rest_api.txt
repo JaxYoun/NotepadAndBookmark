@@ -1,0 +1,71 @@
+REST_API格式：http://host:port/indexName/_doc/docId
+GET：查询
+PUT：新建
+POST：修改
+DELETE：删除
+
+1.添加索引：http://localhost:9200/i_user 【PUT】
+{
+  "settings": {
+    "number_of_shards": 4,
+    "number_of_replicas": 2
+  },
+  "mappings": {
+    "properties": {
+      "name": {
+        "type": "text"
+      },
+      "age": {
+        "type": "integer"
+      },
+      "birthday": {
+        "type": "date",
+        "format": "yyyy-MM-dd hh:mm:ss || yyyy-MM-dd || epoch_millis"
+      }
+    }
+  }
+}
+
+2.修改索引：http://localhost:9200/i_user/_mappings 【PUT/POST】
+{
+  "properties": {
+    "name": {
+      "type": "text"
+    },
+    "country": {
+      "type": "keyword"
+    },
+    "age": {
+      "type": "integer"
+    },
+    "birthday": {
+      "type": "date",
+      "format": "yyyy-MM-dd hh:mm:ss || yyyy-MM-dd || epoch_millis"
+    }
+  }
+}
+
+3.文档插入：
+指定文档id插入：http://localhost:9200/i_user/_create/11 http://localhost:9200/i_user/_doc/11 【PUT】
+{
+  "name": "yang",
+  "country": "中国",
+  "age": "31",
+  "birthday": "1988-03-06 12:12:23"
+}
+
+自动产生文档uuid插入：http://localhost:9200/i_user/_doc/ 【POST】
+{
+  "name": "yang",
+  "country": "美国",
+  "age": "31",
+  "birthday": "1988-03-06 12:12:23"
+}
+
+4.修改文档：
+通过id直接修改：http://localhost:9200/i_user/_doc/1 【PUT/POST】
+{
+  "name": "yang11444"
+}
+
+通过脚本修改：

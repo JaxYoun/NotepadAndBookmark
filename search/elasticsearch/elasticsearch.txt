@@ -23,9 +23,9 @@
 
 三、单机启动多节点：
 1.为每个节点执行一次：
-	【./elasticsearch.bat -E node.name=es_node_0 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_0】
-	【./elasticsearch.bat -E node.name=es_node_1 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_1】
-	【./elasticsearch.bat -E node.name=es_node_2 -E cluster.name=es_cluster_0 -E path.data=D:\es_data\node_2】
+	【./elasticsearch.bat -E node.name=es_node_0 -E cluster.name=es_clstr_0 -E path.data=D:\es_data\node_0】
+	【./elasticsearch.bat -E node.name=es_node_1 -E cluster.name=es_clstr_0 -E path.data=D:\es_data\node_1】
+	【./elasticsearch.bat -E node.name=es_node_2 -E cluster.name=es_clstr_0 -E path.data=D:\es_data\node_2】
 	好处是不需要拷贝安装包和修改配置文件，端口是自增长的，节点角色按照启动顺序来，服务发现也是通过默认地址
 2.访问【http://localhost:9200/_cat/nodes】验证集群节点状态
 
