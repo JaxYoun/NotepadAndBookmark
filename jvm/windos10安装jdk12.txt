@@ -1,2 +1,6 @@
 1.由于新版jdk安装包本身不包含jre，需要在jdk安装成功后手动执行命令生成jre：
 	D:\ProgramFiles\Java\jdk-12.0.2目录下执行：bin\jlink.exe --module-path jmods --add-modules java.desktop --output jre
+
+使用Maven时出现“jssecacerts PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilde”错误
+方法一：忽略SSL证书检查
+-Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true

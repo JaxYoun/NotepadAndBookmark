@@ -7626,8 +7626,8 @@ Windows也使用的java线程查看器
 2.根据进程查看进程下的所有线程状况 jstack pId
 （1）"Thread-1"表示线程名称
 （2）"prio=6"表示线程优先级
-（3）"tid=00000000497cec00"表示线程Id
-（4）"nid=0x219c"表示本地线程id
+（3）"tid=00000000497cec00"表示java应用中的线程Id
+（4）"nid=0x219c"表示与应用线程对应的OS本地线程id
 /********************************************/
 List初始化方法
 public static void main(String[] args) {
